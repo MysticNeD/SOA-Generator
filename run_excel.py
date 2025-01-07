@@ -328,7 +328,6 @@ def p2m_workings(workbook, input_file, output_file):
         headers.append(header_value)
         if header_value == "Open Amount":
             p2m_open_amount_col_idx = col
-            break
         if header_value == "Invoice Date":
             p2m_invoice_date_col_idx = col
         if header_value == "Remark":
@@ -471,7 +470,6 @@ def m2p_workings(workbook, input_file, output_file, entity_name, entity_code):
         headers.append(header_value)
         if header_value == "Open Amount":
             m2p_open_amount_col_idx = col
-            break
         if header_value == "Invoice Date":
             m2p_invoice_date_col_idx = col
         if header_value == "Remark":
