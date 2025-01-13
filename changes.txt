@@ -1,6 +1,6 @@
-Remember to modfiy these changes to satisfy:
+Remember to modfiy these changes to satisfy.
 
-run_excel file
+run_excel file:
 
 def soa_m2p_template():
 supplier_name_cell.value = "BIG COMPANY SDN BHD"
@@ -12,7 +12,7 @@ change to own company name
 entity_code_cell.value = "3018"
 change to own company code
 
-main.py file
+main.py file:
 
 entity_mapping = {
     "ABC SDN BHD": "0001",
