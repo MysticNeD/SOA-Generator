@@ -1,0 +1,22 @@
+Remember to modfiy these changes to satisfy:
+
+run_excel file
+
+def soa_m2p_template():
+supplier_name_cell.value = "BIG COMPANY SDN BHD"
+change to own company name
+
+def soa_p2m_template():
+entity_name_cell.value = "BIG COMPANY SDN BHD"
+change to own company name
+entity_code_cell.value = "3018"
+change to own company code
+
+main.py file
+
+entity_mapping = {
+    "ABC SDN BHD": "0001",
+    "DEF SDN BHD": "0002",
+    "GHI SDN BHD": "0003",
+}
+change to own company name and code
