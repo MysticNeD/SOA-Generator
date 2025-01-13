@@ -217,6 +217,24 @@ def soa_m2p_template(soa_m2p_sheet, entity_name, entity_code):
         cell.alignment = Alignment(horizontal='left', vertical='center')
         cell.value = header3
         cell.font = Font(bold=True, size = 11, name = 'Calibri')
+
+    top_left_border = Border(top=Side(style='thick'), left=Side(style='thick'))
+    bottom_left_border = Border(bottom=Side(style='thick'), left=Side(style='thick'))
+    top_right_border = Border(right=Side(style='thick'), top=Side(style='thick'))
+
+    for row in soa_m2p_sheet.iter_rows(min_row=22, max_row=25, min_col=2, max_col=2):
+        for cell in row:
+            cell.border = Border(left=Side(style='thick'))
+    for row in soa_m2p_sheet.iter_rows(min_row=22, max_row=25, min_col=3, max_col=3):
+        for cell in row:
+            cell.border = Border(right=Side(style='thick'))
+    
+    B21_b = soa_m2p_sheet['B21']
+    B21_b.border = top_left_border
+    C21_b = soa_m2p_sheet['C21']
+    C21_b.border = top_right_border
+    B26_b = soa_m2p_sheet['B26']
+    B26_b.border = bottom_left_border
     
     for col in soa_m2p_sheet.iter_rows(min_row = 19, max_row = 19, min_col = 6, max_col = 6):
         for cell in col:
@@ -226,7 +244,7 @@ def soa_m2p_template(soa_m2p_sheet, entity_name, entity_code):
     for col in soa_m2p_sheet.iter_rows(min_row = 26, max_row = 26, min_col = 3, max_col = 3):
         for cell in col:
             cell.fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
-            cell.border = Border(top=Side(style='thick'), bottom=Side(style='double'))
+            cell.border = Border(top=Side(style='thick'), bottom=Side(style='double'), right=Side(style='thick')
 
     # Adjust column widths
     column_widths = [10, 22, 35, 13, 12, 20, 15, 15, 35, 17, 8, 11, 18]
