@@ -32,7 +32,7 @@ def generate_file():
                                                     entity_name, entity_code)).start()
 
 def process_file(input_file, output_file, entity_name, entity_code):
-    run_excel.generate_soa(input_file, output_file, entity_code, entity_name)
+    run_excel.generate_soa(input_file, output_file, entity_code, entity_name, )
     label.config(text="File processed and saved successfully!")
 
 def show_log_window():
@@ -65,14 +65,14 @@ def update_entity_name(event):
 
 
 entity_mapping = {
-    "ABC SDN BHD": "0001",
-    "DEF SDN BHD": "0002",
-    "GHI SDN BHD": "0003",
+    "ABC SDN BHD": "0123",
+    "DEF SDN BHD": "4567",
+    "GHI SDN BHD": "8901",
 }
 
 
 entity_names = list(entity_mapping.keys())
-entity_codes = list(entity_mapping.values())
+entity_codes = list(entity_mapping.values()) 
 
 app = Tk()
 app.title("SOA Generator")
