@@ -18,6 +18,7 @@ def soa_p2m_template(soa_p2m_sheet, entity_name, entity_code):
     entity_code_title.value = "ENTITY CODE:"
     entity_code_title.font = font
 
+
     entity_code_cell = soa_p2m_sheet['C1']
     entity_code_cell.value = entity_code
     entity_code_cell.font = font
@@ -173,15 +174,12 @@ def soa_m2p_template(soa_m2p_sheet, entity_name, entity_code):
     soa_header.alignment = Alignment(horizontal='center', vertical='center')
     soa_header.fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
 
-    # Define the border style
     title_border = Border(top=Side(style='thick'), bottom=Side(style='thick'))
-    # Apply the border to each cell in the merged range
     for row in soa_m2p_sheet.iter_rows(min_row=5, max_row=5, min_col=1, max_col=8):
         for cell in row:
             cell.border = title_border
 
     final_title_border = Border(right=Side(style='thick'), top=Side(style='thick'), bottom=Side(style='thick'))
-    # Apply the border to each cell in the merged range
     title_border_final = soa_m2p_sheet['I5']
     title_border_final.border = final_title_border
             
@@ -235,16 +233,18 @@ def soa_m2p_template(soa_m2p_sheet, entity_name, entity_code):
     C21_b.border = top_right_border
     B26_b = soa_m2p_sheet['B26']
     B26_b.border = bottom_left_border
-    
+
     for col in soa_m2p_sheet.iter_rows(min_row = 19, max_row = 19, min_col = 6, max_col = 6):
         for cell in col:
             cell.fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
-            cell.border = Border(top=Side(style='thin'), bottom=Side(style='double'))
+            cell.border = Border(top=Side(style='thin'), bottom=Side(style='thick'))
+
+    
 
     for col in soa_m2p_sheet.iter_rows(min_row = 26, max_row = 26, min_col = 3, max_col = 3):
         for cell in col:
             cell.fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
-            cell.border = Border(top=Side(style='thick'), bottom=Side(style='double'), right=Side(style='thick')
+            cell.border = Border(top=Side(style='thick'), bottom=Side(style='double'), right=Side(style='thick'))
 
     # Adjust column widths
     column_widths = [10, 22, 35, 13, 12, 20, 15, 15, 35, 17, 8, 11, 18]
@@ -258,12 +258,11 @@ def p2m_workings(workbook, input_file, output_file):
     arp2m = workbook["AR(P2M)"]
     app2m = workbook["AP(P2M)"]
 
-    # create new sheet and insert title
     workingsp2m = workbook.create_sheet(title="WORKINGS(P2M)")
     headers = ["Invoice_Date", "Invoice No", "Description", "Amount", "Paid", 
-            "Outstanding", "Nature", "Remarks", "Supplier Name"]
+            "Outstanding", "Nature", "Remarks", "Supplier Name", "Action", "INVOICES TO BE REVIEW"]
 
-    for col, header in enumerate(headers, start=4):  # Columns start from 'D' (index 4)
+    for col, header in enumerate(headers, start=4):
         workingsp2m.cell(row=1, column=col, value=header)
 
     print("Workings Sheet Created")
@@ -274,10 +273,8 @@ def p2m_workings(workbook, input_file, output_file):
     invoice_col_idx = header_map["Invoice Number"]
     open_amount_col_idx = header_map["Open Amount"]
 
-
-
     target_row = 2
-    for row in app2m.iter_rows(min_row=1, max_col=99, values_only=True):  
+    for row in app2m.iter_rows(min_row=1, max_col=99, values_only=True):
         invoice_no = row[invoice_col_idx]
         open_amount = row[open_amount_col_idx]
 
@@ -294,12 +291,13 @@ def p2m_workings(workbook, input_file, output_file):
         if invoice_number is not None and "S.T" in invoice_number:
             parts = invoice_number.split(" ")
             if len(parts) > 0:
-                workingsp2m.cell(row=row_index, column=1, value=parts[0])  
+                workingsp2m.cell(row=row_index, column=1, value=parts[0])
             if len(parts) > 1:
-                workingsp2m.cell(row=row_index, column=2, value=parts[1]) 
+                workingsp2m.cell(row=row_index, column=2, value=parts[1])
             if len(parts) > 2:
-                workingsp2m.cell(row=row_index, column=3, value=parts[2]) 
+                workingsp2m.cell(row=row_index, column=3, value=parts[2])
         else:
+            # if no S.T
             workingsp2m.cell(row=row_index, column=1, value=invoice_number)
     print("Text to columns done")
     workingsp2m.cell(row=1, column=1, value="W_RI_Matching")
@@ -346,6 +344,7 @@ def p2m_workings(workbook, input_file, output_file):
         headers.append(header_value)
         if header_value == "Open Amount":
             p2m_open_amount_col_idx = col
+            break
         if header_value == "Invoice Date":
             p2m_invoice_date_col_idx = col
         if header_value == "Remark":
@@ -359,43 +358,65 @@ def p2m_workings(workbook, input_file, output_file):
         raise ValueError("Header 'Invoice Date' not found")
     if p2m_remark_col_idx is None:
         raise ValueError("Header 'Remark' not found")
+    
+    arp2m_data = {}
+
+    for row in range(2,arp2m.max_row + 1):
+        key = arp2m[f"A{row}"].value
+        if key:
+            arp2m_data[key] = {
+            "invoice_date": arp2m[f"{chr(64 + p2m_invoice_date_col_idx)}{row}"].value,
+            "remark": arp2m[f"{chr(64 + p2m_remark_col_idx)}{row}"].value,
+            "open_amount": arp2m[f"{chr(64 + p2m_open_amount_col_idx)}{row}"].value
+            }
+
+    ino_formulas = [f"=A{row}" for row in range(start_row, workingsp2m.max_row + 1)]
+    paid_formulas = [f"=G{row}-I{row}" for row in range(start_row, workingsp2m.max_row + 1)]
+    nature_formulas = [f'=IF(B{row}="S.T","XILNEX: STOCK TRF","")' for row in range(start_row, workingsp2m.max_row + 1)]
+    st_formulas = [f'=IF(B{row}="S.T","REFER TO TAB STOCK TRANSFER","MULTICARE HEALTH PHARMACY SDN")' for row in range(start_row, workingsp2m.max_row + 1)]
 
     for row in range(2, workingsp2m.max_row + 1):
-        formula = f"=VLOOKUP(A{row},'AR(P2M)'!A1:{chr(64 + p2m_invoice_date_col_idx)}{arp2m.max_row},{p2m_invoice_date_col_idx},0)"
-        workingsp2m[f"D{row}"] = formula
-        cell_date = workingsp2m[f"D{row}"]
-        cell_date.number_format = "dd/mm/yyyy"
-        print("idate done")
+        lookup_key = workingsp2m[f"A{row}"].value
+        if lookup_key in arp2m_data:
+            workingsp2m[f"D{row}"].value = arp2m_data[lookup_key]["invoice_date"]
+            workingsp2m[f"D{row}"].number_format = "dd/mm/yyyy"
+    print("idate done")
 
-    for row in range(start_row, workingsp2m.max_row + 1):
-        formula = f'=A{row}'
-        workingsp2m[f"E{row}"] = formula
-        print("ino done")
-
-    for row in range(2, workingsp2m.max_row + 1):
-        formula = f"=VLOOKUP(A{row},'AR(P2M)'!A1:{chr(64 + p2m_remark_col_idx)}{arp2m.max_row},{p2m_remark_col_idx},0)"
-        workingsp2m[f"F{row}"] = formula
-        print("desc done")
-
-    for row in range(start_row, workingsp2m.max_row + 1):
-        formula = f'=G{row}-I{row}'
-        workingsp2m[f"H{row}"] = formula
-        print("paid done")
+    for row, formula in enumerate(ino_formulas, start=start_row):
+        workingsp2m[f"E{row}"].value = formula
+    print("ino done")
 
     for row in range(2, workingsp2m.max_row + 1):
-        formula = f"=VLOOKUP(A{row},'AR(P2M)'!A1:{chr(64 + p2m_open_amount_col_idx)}{arp2m.max_row},{p2m_open_amount_col_idx},0)"
-        workingsp2m[f"I{row}"] = formula
-        print("outstanding done")
+        lookup_key = workingsp2m[f"A{row}"].value
+        if lookup_key in arp2m_data:
+            workingsp2m[f"F{row}"].value = arp2m_data[lookup_key]["remark"]
+    print("desc done")
 
-    for row in range(start_row, workingsp2m.max_row + 1):
-        formula = f'=IF(B{row}="S.T","XILNEX: STOCK TRF","")'
-        workingsp2m[f"J{row}"] = formula
-        print("nature done")
+    for row, formula in enumerate(paid_formulas, start=start_row):
+        workingsp2m[f"H{row}"].value = formula
+    print("paid done")
 
-    for row in range(start_row, workingsp2m.max_row + 1):
-        formula = f'=IF(B{row}="S.T","REFER TO TAB STOCK TRANSFER","MULTICARE HEALTH PHARMACY SDN")'
-        workingsp2m[f"L{row}"] = formula
-        print("st done")
+    for row in range(2, workingsp2m.max_row + 1):
+        lookup_key = workingsp2m[f"A{row}"].value
+        if lookup_key in arp2m_data:
+            workingsp2m[f"I{row}"].value = arp2m_data[lookup_key]["open_amount"]
+    print("outstanding done")
+
+    for row, formula in enumerate(nature_formulas, start=start_row):
+        workingsp2m[f"J{row}"].value = formula
+    print("nature done")
+
+    for row, formula in enumerate(st_formulas, start=start_row):
+        workingsp2m[f"L{row}"].value = formula
+    print("st done")
+
+    action_formula = [f'=IF(H{row}=0, "OK", IF(H{row}>0, "REVIEW AR", "REVIEW AP"))' for row in range(start_row, workingsp2m.max_row + 1)]
+    for row, formula in enumerate(action_formula, start=start_row):
+        workingsp2m[f"M{row}"].value = formula.replace("@", "")
+
+
+    workingsp2m['N2'].value = '=COUNTIF(M:M,"REVIEW AP") + COUNTIF(M:M,"REVIEW AR")'
+
 
 def m2p_workings(workbook, input_file, output_file, entity_name, entity_code):
     arm2p = workbook["AR(M2P)"]
@@ -404,7 +425,7 @@ def m2p_workings(workbook, input_file, output_file, entity_name, entity_code):
     # create new sheet and insert title
     workingsm2p = workbook.create_sheet(title="WORKINGS(M2P)")
     headers = ["Invoice_Date", "Invoice No", "Description", "Amount", "Net Off", 
-            "Outstanding", "Nature", "Remarks", "Supplier Name"]
+            "Outstanding", "Nature", "Remarks", "Supplier Name","Action","INVOICES TO BE REVIEW"]
 
     for col, header in enumerate(headers, start=4):  # Columns start from 'D' (index 4)
         workingsm2p.cell(row=1, column=col, value=header)
@@ -417,9 +438,8 @@ def m2p_workings(workbook, input_file, output_file, entity_name, entity_code):
     invoice_col_idx = header_map["Invoice Number"]
     open_amount_col_idx = header_map["Open Amount"]
 
-
     target_row = 2
-    for row in apm2p.iter_rows(min_row=1, max_col=99, values_only=True): 
+    for row in apm2p.iter_rows(min_row=1, max_row=apm2p.max_row, max_col=99, values_only=True):
         invoice_no = row[invoice_col_idx]
         open_amount = row[open_amount_col_idx]
 
@@ -436,7 +456,7 @@ def m2p_workings(workbook, input_file, output_file, entity_name, entity_code):
         if invoice_number is not None and "S.T" in invoice_number:
             parts = invoice_number.split(" ")
             if len(parts) > 0:
-                workingsm2p.cell(row=row_index, column=1, value=parts[0])  
+                workingsm2p.cell(row=row_index, column=1, value=parts[0])
             if len(parts) > 1:
                 workingsm2p.cell(row=row_index, column=2, value=parts[1])
             if len(parts) > 2:
@@ -488,6 +508,7 @@ def m2p_workings(workbook, input_file, output_file, entity_name, entity_code):
         headers.append(header_value)
         if header_value == "Open Amount":
             m2p_open_amount_col_idx = col
+            break
         if header_value == "Invoice Date":
             m2p_invoice_date_col_idx = col
         if header_value == "Remark":
@@ -500,43 +521,64 @@ def m2p_workings(workbook, input_file, output_file, entity_name, entity_code):
     if m2p_remark_col_idx is None:
         raise ValueError("Header 'Remarks' not found")
 
+    arm2p_data = {}
+
+    for row in range(2,arm2p.max_row + 1):
+        key = arm2p[f"A{row}"].value
+        if key:
+            arm2p_data[key] = {
+            "invoice_date": arm2p[f"{chr(64 + m2p_invoice_date_col_idx)}{row}"].value,
+            "remark": arm2p[f"{chr(64 + m2p_remark_col_idx)}{row}"].value,
+            "open_amount": arm2p[f"{chr(64 + m2p_open_amount_col_idx)}{row}"].value
+            }
+
+    ino_formulas = [f"=A{row}" for row in range(start_row, workingsm2p.max_row + 1)]
+    paid_formulas = [f"=G{row}-H{row}" for row in range(start_row, workingsm2p.max_row + 1)]
+    nature_formulas = [f'=IF(B{row}="S.T","XILNEX: STOCK TRF","")' for row in range(start_row, workingsm2p.max_row + 1)]
+    st_formulas = [f'=IF(B{row}="S.T","REFER TO TAB STOCK TRANSFER","MULTICARE HEALTH PHARMACY SDN")' for row in range(start_row, workingsm2p.max_row + 1)]
 
     for row in range(2, workingsm2p.max_row + 1):
-        formula = f"=VLOOKUP(A{row},'AR(M2P)'!A1:{chr(64 + m2p_invoice_date_col_idx)}{arm2p.max_row},{m2p_invoice_date_col_idx},0)"
-        workingsm2p[f"D{row}"] = formula
-        cell_date = workingsm2p[f"D{row}"]
-        cell_date.number_format = "dd/mm/yyyy"
-        print("M2P idate done")
+        lookup_key = workingsm2p[f"A{row}"].value
+        if lookup_key in arm2p_data:
+            workingsm2p[f"D{row}"].value = arm2p_data[lookup_key]["invoice_date"]
+            workingsm2p[f"D{row}"].number_format = "dd/mm/yyyy"
+    print("M2P idate done")
 
-    for row in range(start_row, workingsm2p.max_row + 1):
-        formula = f'=A{row}'
-        workingsm2p[f"E{row}"] = formula
-        print("M2P ino done")
-
-    for row in range(2, workingsm2p.max_row + 1):
-        formula = f"=VLOOKUP(A{row},'AR(M2P)'!A1:{chr(64 + m2p_remark_col_idx)}{arm2p.max_row},{m2p_remark_col_idx},0)"
-        workingsm2p[f"F{row}"] = formula
-        print("M2P desc done")
-
-    for row in range(start_row, workingsm2p.max_row + 1):
-        formula = f'=G{row}-I{row}'
-        workingsm2p[f"H{row}"] = formula
-        print("M2P paid done")
+    for row, formula in enumerate(ino_formulas, start=start_row):
+        workingsm2p[f"E{row}"].value = formula
+    print("M2P ino done")
 
     for row in range(2, workingsm2p.max_row + 1):
-        formula = f"=VLOOKUP(A{row},'AR(M2P)'!A1:{chr(64 + m2p_open_amount_col_idx)}{arm2p.max_row},{m2p_open_amount_col_idx},0)"
-        workingsm2p[f"I{row}"] = formula
-        print("M2P outstanding done")
+        lookup_key = workingsm2p[f"A{row}"].value
+        if lookup_key in arm2p_data:
+            workingsm2p[f"F{row}"].value = arm2p_data[lookup_key]["remark"]
+    print("M2P desc done")
 
-    for row in range(start_row, workingsm2p.max_row + 1):
-        formula = f'=IF(B{row}="S.T","XILNEX: STOCK TRF","")'
-        workingsm2p[f"J{row}"] = formula
-        print("M2P nature done")
+    for row, formula in enumerate(paid_formulas, start=start_row):
+        workingsm2p[f"I{row}"].value = formula
+    print("M2P paid done")
 
-    for row in range(start_row, workingsm2p.max_row + 1):
-        formula = f'=IF(B{row}="S.T","REFER TO TAB STOCK TRANSFER","{entity_code}")'
-        workingsm2p[f"L{row}"] = formula
-        print("M2P st done")
+    for row in range(2, workingsm2p.max_row + 1):
+        lookup_key = workingsm2p[f"A{row}"].value
+        if lookup_key in arm2p_data:
+            workingsm2p[f"H{row}"].value = arm2p_data[lookup_key]["open_amount"]
+    print("M2P outstanding done")
+
+    for row, formula in enumerate(nature_formulas, start=start_row):
+        workingsm2p[f"J{row}"].value = formula
+    print("M2P nature done")
+
+    for row, formula in enumerate(st_formulas, start=start_row):
+        workingsm2p[f"L{row}"].value = formula
+    print("M2P st done")
+
+    action_formula = [f'=IF(I{row}=0, "OK", IF(I{row}>0, "REVIEW AR", "REVIEW AP"))' for row in range(start_row, workingsm2p.max_row + 1)]
+    for row, formula in enumerate(action_formula, start=start_row):
+        workingsm2p[f"M{row}"].value = formula.replace("@", "")
+
+
+    workingsm2p['N2'].value = '=COUNTIF(M:M,"REVIEW AP") + COUNTIF(M:M,"REVIEW AR")'
+
 
 def generate_soa(input_file, output_file, entity_name, entity_code):  
     print("Generating starts now... Please do not close the program.")
@@ -553,4 +595,3 @@ def generate_soa(input_file, output_file, entity_name, entity_code):
     print("Generate done. Now saving file...")
     workbook.save(output_file)
     print(f"Processing complete. File saved as '{output_file}'.")
-
